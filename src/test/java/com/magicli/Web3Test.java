@@ -1,5 +1,6 @@
 package com.magicli;
 
+import com.magicli.contracts.Faucet;
 import org.bitcoinj.core.Utils;
 import org.bitcoinj.crypto.*;
 import org.bitcoinj.wallet.DeterministicSeed;
@@ -17,6 +18,7 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.RemoteCall;
+import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.*;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.Contract;
@@ -42,7 +44,7 @@ public class Web3Test {
         Web3j web3j = Web3j.build(new HttpService("https://ropsten.infura.io/v3/5c1324dbb0594ceabf05ed3b1234f838"));
 
         EthGetTransactionCount ethGetTransactionCount = web3j.ethGetTransactionCount(
-                "0x46f7B279265C8Cd52bf43288BCf7392d7EaD49dF", DefaultBlockParameterName.LATEST).sendAsync().get();
+                "0x33feb96105f9afe038813c964c7bfe04f6c77ad9", DefaultBlockParameterName.LATEST).sendAsync().get();
         BigInteger nonce = ethGetTransactionCount.getTransactionCount();
 
         System.out.println(nonce);
@@ -104,7 +106,6 @@ public class Web3Test {
         Web3j web3j = Web3j.build(new HttpService("https://ropsten.infura.io/v3/5c1324dbb0594ceabf05ed3b1234f838"));
 
 
-
         // create our transaction
         RawTransaction rawTransaction = RawTransaction.createEtherTransaction(BigInteger.valueOf(7), BigInteger.valueOf(1000000000), BigInteger.valueOf(312520), "0xf2146b6ddf2b7844e6ab2a63bcca66b70353ca69", BigInteger.valueOf(10000));
 
@@ -124,19 +125,34 @@ public class Web3Test {
     }
 
     @Test
-    public void TestCall1() throws Exception {
+    public void TestDeployContract() throws Exception {
+        //993dcd1e99159cc56c7934646cdf53ef8a7b2493c0cf5760541c97de4949ace5  yms
+        byte[] priKey = Utils.HEX.decode("993dcd1e99159cc56c7934646cdf53ef8a7b2493c0cf5760541c97de4949ace5");
+        ECKeyPair ecKeyPair = ECKeyPair.create(priKey);
+        Credentials credentials = Credentials.create(ecKeyPair);
         Web3j web3j = Web3j.build(new HttpService("https://ropsten.infura.io/v3/5c1324dbb0594ceabf05ed3b1234f838"));
+        RemoteCall<Faucet> remoteCall = Faucet.deploy(web3j, credentials, new DefaultGasProvider());
+        Faucet faucet = remoteCall.send();
+        System.out.println(faucet.getContractAddress());
 
+
+
+    }
+
+
+    @Test
+    public void TestCallContract() throws Exception {
+        //993dcd1e99159cc56c7934646cdf53ef8a7b2493c0cf5760541c97de4949ace5  yms
         byte[] priKey = Utils.HEX.decode("a6ea51bb9c645607c3e5eb6c7e91ba68a8b8075a64cb0a26bb8a45fcc796a881");
         ECKeyPair ecKeyPair = ECKeyPair.create(priKey);
-
         Credentials credentials = Credentials.create(ecKeyPair);
+        Web3j web3j = Web3j.build(new HttpService("https://ropsten.infura.io/v3/5c1324dbb0594ceabf05ed3b1234f838"));
 
 
-        Contract contract = PublicResolver.load("0xf2146b6ddf2b7844e6ab2a63bcca66b70353ca69",web3j,credentials, BigInteger.valueOf(1000000000L),BigInteger.valueOf(1000000000L));
-//        contract.
+        Faucet faucet = Faucet.load("0xABbB80A38dd7d29bF31460423F263786fd7f98ec", web3j, credentials, new DefaultGasProvider());
+        RemoteFunctionCall remoteFunctionCall = faucet.withdraw(BigInteger.valueOf(100000000000000000L));
+        remoteFunctionCall.send();
 
-//        EthSendRawTransaction
 
     }
 
